@@ -67,6 +67,14 @@ func runService(name string, isDebug bool) {
 	if isDebug {
 		elog = debug.New(name)
 	} else {
+		if f, err := openLogfile(); err == nil {
+			if err = redirectToLogfile(f); err != nil {
+				return
+			}
+		} else {
+			return
+		}
+
 		elog, err = eventlog.Open(name)
 		if err != nil {
 			return

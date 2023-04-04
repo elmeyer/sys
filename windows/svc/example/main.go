@@ -15,11 +15,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 )
 
@@ -31,6 +34,45 @@ func usage(errmsg string) {
 			"       install, remove, debug, start, stop, pause or continue.\n",
 		errmsg, os.Args[0])
 	os.Exit(2)
+}
+
+// Opens or creates a log file in the executable's directory.
+func openLogfile() (f *os.File, err error) {
+	var exPath string
+	if exPath, err = exePath(); err != nil {
+		err = fmt.Errorf("failed to get path to executable: %w", err)
+		return
+	}
+
+	exDir := filepath.Dir(exPath)
+	if f, err = os.OpenFile(filepath.Join(exDir, "example.log"), os.O_RDWR|os.O_CREATE, 0644); err != nil {
+		err = fmt.Errorf("failed to create or open log file: %w", err)
+		return
+	}
+
+	return
+}
+
+// redirectToLogfile redirects stdout and stderr to the given file.
+func redirectToLogfile(f *os.File) (err error) {
+	if f == nil {
+		err = errors.New("log file is nil")
+		return
+	}
+
+	if err = windows.SetStdHandle(windows.STD_OUTPUT_HANDLE, windows.Handle(f.Fd())); err != nil {
+		err = fmt.Errorf("failed to redirect stdout to %s: %w", f.Name(), err)
+		return
+	}
+	os.Stdout = f
+
+	if err = windows.SetStdHandle(windows.STD_ERROR_HANDLE, windows.Handle(f.Fd())); err != nil {
+		err = fmt.Errorf("failed to redirect stderr to %s: %w", f.Name(), err)
+		return
+	}
+	os.Stderr = f
+
+	return
 }
 
 func main() {
