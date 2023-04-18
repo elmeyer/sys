@@ -22,7 +22,7 @@ var elog debug.Log
 type myservice struct{}
 
 func (m *myservice) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
-	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
+	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue | svc.AcceptSessionChange
 	changes <- svc.Status{State: svc.StartPending}
 	fasttick := time.Tick(500 * time.Millisecond)
 	slowtick := time.Tick(2 * time.Second)
